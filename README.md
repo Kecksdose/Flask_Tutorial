@@ -1,1 +1,3 @@
-This website is base on [this](http://code.tutsplus.com/tutorials/creating-a-web-app-from-scratch-using-python-flask-and-mysql--cms-22972) web blog. Enjoy!
+# Flask Playground, following this beautiful tutorial: http://blog.miguelgrinberg.com/post/the-flask-mega-tutorial-part-i-hello-world
+
+### Current status: 4/18

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  {% if title %}
+  <title>{{ title }} - MyBlog</title>
+  {% else %}
+  <title>Willkommen zu MyBlog</title>
+  {% endif %}
+</head>
+<body>
+  <div> MyBlog: <a href="/index/">Home </a> <a href="/login/">Login</a></div>
+  <hr>
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <ul>
+      {% for message in messages %}
+        <li>{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  {% endwith %}
+  {% block content %}
+  {% endblock %}
+</body>
+</html>
