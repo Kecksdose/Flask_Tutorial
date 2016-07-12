@@ -1,0 +1,23 @@
+<!-- extended from base layout -->
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Registrierung</h1>
+<form action="" method="post" name="login">
+  {{ form.hidden_tag() }}
+  <p>
+    Neuer Benutzername:
+    {{ form.nickname(size=30) }}<br>
+    {% for error in form.nickname.errors %}
+      <span style="color: red;">[{{ error }}]</span>
+    {% endfor %}<br>
+    (Sicheres) Passwort:
+    {{ form.password(size=30) }}<br>
+    {% for error in form.password.errors %}
+      <span style="color: red;">[{{ error }}]</span>
+    {% endfor %}<br>
+  </p>
+  <p><input type="submit" value="Registrieren"></p>
+</form>
+{% endblock %}
