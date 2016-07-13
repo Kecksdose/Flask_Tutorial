@@ -1,12 +1,15 @@
 from app import db, lm, bcrypt
 from config import BCRYPT_LOG_ROUNDS
 from sqlalchemy.ext.hybrid import hybrid_property
+from hashlib import md5  # For gravatar
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nickname = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
     posts = db.relationship('Post', backref='author', lazy='dynamic')
+    about_me = db.Column(db.String(140))
+    last_seen = db.Column(db.DateTime)
     _password = db.Column(db.String(128))
 
     @hybrid_property
@@ -20,6 +23,10 @@ class User(db.Model):
 
     def is_correct_password(self, plaintext):
         return bcrypt.check_password_hash(self._password, plaintext)
+
+    def avatar(self, size):
+        return 'http://www.gravatar.com/avatar/%s?d=mm&s=%d' % \
+        (md5(self.email.encode('utf-8')).hexdigest(), size)
 
     @property
     def is_authenticated(self):
@@ -40,7 +47,9 @@ class User(db.Model):
             return str(self.id)  # python 3
 
     def __repr__(self):
-        return '<User {}>'.format(self.nickname)
+        return '<ID: {}, User: {}, Email: {}>'.format(self.id,
+            self.nickname,
+            self.email)
 
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -49,7 +58,8 @@ class Post(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):
-        return '<Post {}>'.format(self.body)
+        return '<Time: {}, Post: {}>'.format(self.timestamp,
+            self.body)
 
 # Login
 @lm.user_loader

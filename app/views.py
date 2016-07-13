@@ -1,12 +1,21 @@
-from flask import render_template, flash, redirect, g, url_for, session, request
+from flask import (render_template, flash, redirect, g, url_for,
+                   session, request)
+
 from flask_login import login_user, logout_user, current_user, login_required
+from datetime import datetime
 from app import app, db
-from .forms import UsernamePasswordForm
+from .forms import (UsernameMailPasswordRegisterForm,
+                    UsernamePasswordLoginForm,
+                    EditForm)
 from .models import User
 
 @app.before_request
 def before_request():
     g.user = current_user
+    if g.user.is_authenticated:
+        g.user.last_seen = datetime.utcnow()
+        db.session.add(g.user)
+        db.session.commit()
 
 @app.route('/')
 @app.route('/index/')
@@ -26,18 +35,29 @@ def index():
 
 @app.route('/register/', methods=['GET', 'POST'])
 def register():
-    form = UsernamePasswordForm()
+    if g.user is not None and g.user.is_authenticated:
+        return redirect(url_for('index'))
+    form = UsernameMailPasswordRegisterForm()
+    flash(form.validate_on_submit())
     if form.validate_on_submit():
         user = \
             User.query.filter_by(nickname=form.nickname.data).first()
-        if user is None:
-            user = User(nickname=form.nickname.data, password=form.password.data)
+        email = \
+            User.query.filter_by(email=form.email.data).first()
+        if user is not None and email is not None:
+            flash('Nickname und E-Mail-Adresse sind bereits vergeben!')
+        elif user is not None:
+            flash('Nickname ist bereits vergeben!')
+        elif email is not None:
+            flash('E-Mail-Adresse ist bereits vergeben!')
+        else:
+            user = User(nickname=form.nickname.data,
+                        password=form.password.data,
+                        email=form.email.data)
             db.session.add(user)
             db.session.commit()
             flash('Success!')
             return redirect('/index/')
-        else:
-            flash('Nickname ist bereits vergeben!')
     return render_template('register.html',
         title='Registrierung',
         form=form)
@@ -46,7 +66,7 @@ def register():
 def login():
     if g.user is not None and g.user.is_authenticated:
         return redirect(url_for('index'))
-    form = UsernamePasswordForm()
+    form = UsernamePasswordLoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(nickname=form.nickname.data).first()
         if user is not None:
@@ -66,3 +86,34 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('index'))
+
+@app.route('/user/<nickname>')
+@login_required
+def user(nickname):
+    user = User.query.filter_by(nickname=nickname).first()
+    if user == None:
+        flash('User %s not found.' % nickname)
+        return redirect(url_for('index'))
+    posts = [
+        {'author': user, 'body': 'Mein erster Post!'},
+        {'author': user, 'body': 'Und ein weiterer!'}
+    ]
+    return render_template('user.html',
+                           user=user,
+                           posts=posts)
+
+@app.route('/edit/', methods=['GET', 'POST'])
+@login_required
+def edit():
+    form = EditForm()
+    if form.validate_on_submit():
+        g.user.nickname = form.nickname.data
+        g.user.about_me = form.about_me.data
+        db.session.add(g.user)
+        db.session.commit()
+        flash('Deine Daten wurde aktualisiert.')
+        return redirect(url_for('edit'))
+    else:
+        form.nickname.data = g.user.nickname
+        form.about_me.data = g.user.about_me
+    return render_template('edit.html', form=form)
